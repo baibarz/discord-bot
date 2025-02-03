@@ -2,4 +2,5 @@
 database.json
 .venv
 __pycache__/
+IMAGES/
 *.log
