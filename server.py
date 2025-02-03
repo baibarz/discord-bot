@@ -28,7 +28,7 @@ def save_posted_images(posted_images):
 def get_upcoming_images():
     posted_images = load_posted_images()
     all_images = [img for img in os.listdir(IMAGE_FOLDER) if img not in posted_images]
-    return sorted(all_images)[:20]  # Show next 20 images
+    return sorted(all_images)[:48]
 
 # HTML Template
 HTML_TEMPLATE = """
@@ -38,9 +38,9 @@ HTML_TEMPLATE = """
     <title>Image Upload Monitor</title>
     <style>
         body { font-family: Arial, sans-serif; }
-        .image-list { list-style: none; padding: 0; }
-        .image-list li { margin: 10px 0; }
-        img { width: 100px; height: auto; margin-right: 10px; }
+        .image-list { display: flex; flex-wrap: wrap; list-style: none; padding: 0; }
+        .image-list li { margin: 10px; }
+        img { width: 100px; height: auto; }
     </style>
 </head>
 <body>
@@ -77,18 +77,18 @@ def serve_image(filename):
 # Home route to show the images
 @app.route("/")
 def index():
-    images = get_upcoming_images()
+    images = load_posted_images() + get_upcoming_images()
     return render_template_string(HTML_TEMPLATE, images=images)
 
 # Move image to the top of the list
 @app.route("/move", methods=["POST"])
 def move_to_top():
     image = request.form["image"]
-    images = get_upcoming_images()
-    if image in images:
-        images.remove(image)
-        images.insert(0, image)  # Move to top
-        save_posted_images(images)
+    posted_images = load_posted_images()
+    if image in posted_images:
+        posted_images.remove(image)
+    posted_images.insert(0, image)
+    save_posted_images(posted_images)
     return redirect("/")
 
 # Delete image permanently
@@ -99,7 +99,7 @@ def delete_image():
     if image in images:
         images.remove(image)
     save_posted_images(images)
-    os.remove(os.path.join(IMAGE_FOLDER, image))  # Delete the image file
+    os.remove(os.path.join(IMAGE_FOLDER, image))
     return redirect("/")
 
 # Soft delete image (remove from list but keep in folder)
@@ -111,6 +111,6 @@ def soft_delete_image():
         posted_images.append(image)
     save_posted_images(posted_images)
     return redirect("/")
-
+  
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=5002, debug=True)
