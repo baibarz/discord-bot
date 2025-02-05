@@ -56,7 +56,10 @@ def run_bot():
             if send_image(image_path):
                 print(f"Posted {next_image}")
                 posted_images = load_posted_images()
-                posted_images.append(next_image)
+                if isinstance(posted_images, list):
+                    posted_images.append(next_image)
+                else:
+                    posted_images = [next_image]
                 save_posted_images(posted_images)
                 shutil.move(image_path, os.path.join(ARCHIVE_FOLDER, next_image))
             else:

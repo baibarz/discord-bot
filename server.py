@@ -1,12 +1,20 @@
 from flask import Flask, render_template_string, request, redirect, send_from_directory
 import os
 import json
+import requests
+from dotenv import load_dotenv
+import shutil
 
 app = Flask(__name__)
 
 IMAGE_FOLDER = "IMAGES/IMAGE_FOLDER"
 ARCHIVE_FOLDER = "IMAGES/ARCHIVE_FOLDER"
 DB_FILE = "database.json"
+
+# Load environment variables
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
+CHANNEL_ID = os.getenv("CHANNEL_ID")
 
 # Ensure folders exist
 os.makedirs(IMAGE_FOLDER, exist_ok=True)
@@ -50,9 +58,9 @@ HTML_TEMPLATE = """
             <li>
                 <img src="/static/{{ image }}" alt="{{ image }}">
                 <b>{{ image }}</b>
-                <form action="/move" method="post" style="display:inline;">
+                <form action="/post" method="post" style="display:inline;">
                     <input type="hidden" name="image" value="{{ image }}">
-                    <button type="submit">Move to Top</button>
+                    <button type="submit">Post Now</button>
                 </form>
                 <form action="/delete" method="post" style="display:inline;">
                     <input type="hidden" name="image" value="{{ image }}">
@@ -73,19 +81,33 @@ def serve_image(filename):
 # Home route to show the images
 @app.route("/")
 def index():
-    images = load_posted_images() + get_upcoming_images()
-    return render_template_string(HTML_TEMPLATE, images=images)
+    upcoming_images = get_upcoming_images()
+    return render_template_string(HTML_TEMPLATE, images=upcoming_images)
 
-# Move image to the top of the list
-@app.route("/move", methods=["POST"])
-def move_to_top():
+# Post image now
+@app.route("/post", methods=["POST"])
+def post_now():
     image = request.form["image"]
-    posted_images = load_posted_images()
-    if image in posted_images:
-        posted_images.remove(image)
-    posted_images.insert(0, image)
-    save_posted_images(posted_images)
+    image_path = os.path.join(IMAGE_FOLDER, image)
+    if send_image(image_path):
+        posted_images = load_posted_images()
+        posted_images.append(image)
+        save_posted_images(posted_images)
+        shutil.move(image_path, os.path.join(ARCHIVE_FOLDER, image))
+        print(f"Posted {image}")
+    else:
+        print(f"Failed to post {image}")
     return redirect("/")
+
+# Send image to Discord
+def send_image(image_path):
+    url = f"https://discord.com/api/v9/channels/{CHANNEL_ID}/messages"
+    headers = {"Authorization": f"Bot {TOKEN}"}
+
+    with open(image_path, "rb") as file:
+        response = requests.post(url, headers=headers, data={"content": "Here's an image!"}, files={"file": file})
+
+    return response.status_code == 200
 
 # Delete image permanently
 @app.route("/delete", methods=["POST"])
