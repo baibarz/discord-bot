@@ -45,18 +45,37 @@ HTML_TEMPLATE = """
 <head>
     <title>Image Upload Monitor</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        .image-list { display: flex; flex-wrap: wrap; list-style: none; padding: 0; }
-        .image-list li { margin: 10px; }
-        img { width: 100px; height: auto; }
-    </style>
+    body { font-family: Arial, sans-serif; }
+    .image-list { display: flex; flex-wrap: wrap; list-style: none; padding: 0; }
+    .image-list li { margin: 10px; cursor: pointer; }
+    img { width: 100px; height: auto; transition: 0.3s; }
+
+    /* Fullscreen overlay */
+    .overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.9); display: none;
+        justify-content: center; align-items: center;
+    }
+    .overlay img {
+        width: 100vw; 
+        height: 100vh;
+        object-fit: contain;
+    }
+    .close-btn {
+        position: absolute; top: 20px; right: 30px;
+        font-size: 40px; color: white; cursor: pointer;
+        background: rgba(0, 0, 0, 0.6); padding: 10px;
+        border-radius: 5px;
+    }
+</style>
+
 </head>
 <body>
     <h1>Upcoming Images</h1>
     <ul class="image-list">
         {% for image in images %}
             <li>
-                <img src="/static/{{ image }}" alt="{{ image }}">
+                <img src="/static/{{ image }}" alt="{{ image }}" onclick="openImage('/static/{{ image }}')">
                 <b>{{ image }}</b>
                 <form action="/post" method="post" style="display:inline;">
                     <input type="hidden" name="image" value="{{ image }}">
@@ -69,8 +88,30 @@ HTML_TEMPLATE = """
             </li>
         {% endfor %}
     </ul>
+
+ <!-- Fullscreen Image View -->
+<div class="overlay" id="imageOverlay">
+    <span class="close-btn" onclick="closeImage()">&times;</span>
+    <img id="fullImage" src="" alt="Fullscreen Image">
+</div>
+
+
+<script>
+    function openImage(src) {
+        document.getElementById("fullImage").src = src;
+        document.getElementById("imageOverlay").style.display = "flex";
+    }
+
+    function closeImage() {
+        document.getElementById("imageOverlay").style.display = "none";
+    }
+</script>
+
 </body>
 </html>
+
+
+
 """
 
 # Serve image
